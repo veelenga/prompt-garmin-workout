@@ -3,7 +3,7 @@ Privacy Policy
 
 Last updated: Oct 19, 2024
 
-This Privacy Policy describes the policies and procedures of OpenAI Garmin Workout ("We", "Us", or "Our") on the collection, use, and disclosure of Your information when You use Our Service and informs You about Your privacy rights and how the law protects You.
+This Privacy Policy describes the policies and procedures of Prompt Garmin Workout ("We", "Us", or "Our") on the collection, use, and disclosure of Your information when You use Our Service and informs You about Your privacy rights and how the law protects You.
 
 We use Your Personal data to provide and improve the Service. By using the Service, You agree to the collection and use of information in accordance with this Privacy Policy. 
 
@@ -20,7 +20,7 @@ Definitions
 
 For the purposes of this Privacy Policy:
 
-* **Application** means the browser extension provided by Us, named OpenAI Garmin Workout.
+* **Application** means the browser extension provided by Us, named Prompt Garmin Workout.
 
 * **Personal Data** is any information relating to an identified or identifiable individual.
 

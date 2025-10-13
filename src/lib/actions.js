@@ -8,7 +8,7 @@ const trustedUrls = {
   },
   support: {
     pattern:
-      'https://chromewebstore.google.com/detail/openai-garmin-workout/bgphnlbjnkghcliepjibelgkglbjmmma/support',
+      'https://chromewebstore.google.com/detail/prompt-garmin-workout/bgphnlbjnkghcliepjibelgkglbjmmma/support',
     text: 'Support page',
   },
 }

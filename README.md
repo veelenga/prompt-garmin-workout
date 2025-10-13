@@ -1,12 +1,12 @@
-# OpenAI Garmin Workout
+# Prompt Garmin Workout
 
-An chrome plugin that integrates OpenAI's GPT to generate Garmin workouts programmatically and sends them to Garmin Connect.
+A chrome plugin that generates Garmin workouts from natural language prompts using generative AI and sends them to Garmin Connect.
 
 ![demo](src/assets/screen.jpeg)
 
 ## Description
 
-This project allows you to create complex Garmin workouts using natural language input processed by OpenAI's GPT.
+This project allows you to create complex Garmin workouts using natural language prompts processed by generative AI.
 It supports features like targets, repeats, and nested steps, transforming workout descriptions into payloads compatible with Garmin's API.
 
 ## Installing
@@ -19,7 +19,7 @@ It supports features like targets, repeats, and nested steps, transforming worko
 run the command
 
 ```shell
-$ cd openai-garmin-workout
+$ cd prompt-garmin-workout
 
 $ npm run dev
 ```
