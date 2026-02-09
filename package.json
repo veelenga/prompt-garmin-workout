@@ -27,7 +27,7 @@
   },
   "devDependencies": {
     "@crxjs/vite-plugin": "^2.3.0",
-    "@eslint/js": "^9.39.2",
+    "@eslint/js": "^10.0.1",
     "eslint": "^9.39.2",
     "eslint-plugin-jest": "^29.13.0",
     "globals": "^17.3.0",
