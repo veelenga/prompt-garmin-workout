@@ -80,7 +80,9 @@ label {
 }
 
 /* Form elements */
-input[type="password"],
+input[type='password'],
+input[type='text'],
+input[type='url'],
 select {
   width: 100%;
   padding: var(--spacing-small) var(--spacing-medium);
@@ -90,15 +92,26 @@ select {
   transition: border-color var(--transition-duration) ease;
 }
 
-input[type="password"].error {
+input.error {
   border-color: var(--color-error);
   box-shadow: 0 0 0 2px rgba(255, 65, 54, 0.2);
 }
 
-input[type="password"]:focus,
+input[type='password']:focus,
+input[type='text']:focus,
+input[type='url']:focus,
 select:focus {
   border-color: var(--color-link);
   outline: none;
+}
+
+#customModel {
+  margin-top: var(--spacing-small);
+}
+
+.hint {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-small);
 }
 
 /* Links */
@@ -113,8 +126,19 @@ select:focus {
   transition: color var(--transition-duration) ease;
 }
 
-.link:hover {
+.link:hover,
+.link-button:hover {
   color: var(--color-link-hover);
+}
+
+.link-button {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--color-link);
+  cursor: pointer;
+  font: inherit;
+  padding: 0;
 }
 
 /* Buttons */
@@ -131,8 +155,9 @@ select:focus {
   padding: 10px 16px;
   font-size: var(--font-size-regular);
   cursor: pointer;
-  transition: background-color var(--transition-duration) ease,
-              transform 0.1s ease;
+  transition:
+    background-color var(--transition-duration) ease,
+    transform 0.1s ease;
 }
 
 .action-button:hover {

@@ -1,5 +1,5 @@
-const addWorkoutEndpoint = 'https://connect.garmin.com/workout-service/workout'
-const workoutUrl = 'https://connect.garmin.com/modern/workout/'
+const addWorkoutEndpoint = 'https://connect.garmin.com/gc-api/workout-service/workout'
+const workoutsUrl = 'https://connect.garmin.com/app/workouts'
 
 export const sportTypeMapping = {
   running: { sportTypeId: 1, sportTypeKey: 'running', displayOrder: 1 },
@@ -39,9 +39,24 @@ export const distanceUnitMapping = {
 
 export const endConditionTypeMapping = {
   time: { conditionTypeId: 2, conditionTypeKey: 'time', displayOrder: 2, displayable: true },
-  distance: { conditionTypeId: 3, conditionTypeKey: 'distance', displayOrder: 3, displayable: true },
-  'lap.button': { conditionTypeId: 1, conditionTypeKey: 'lap.button', displayOrder: 1, displayable: true },
-  iterations: { conditionTypeId: 7, conditionTypeKey: 'iterations', displayOrder: 7, displayable: false },
+  distance: {
+    conditionTypeId: 3,
+    conditionTypeKey: 'distance',
+    displayOrder: 3,
+    displayable: true,
+  },
+  'lap.button': {
+    conditionTypeId: 1,
+    conditionTypeKey: 'lap.button',
+    displayOrder: 1,
+    displayable: true,
+  },
+  iterations: {
+    conditionTypeId: 7,
+    conditionTypeKey: 'iterations',
+    displayOrder: 7,
+    displayable: false,
+  },
 }
 
 /**
@@ -49,12 +64,12 @@ export const endConditionTypeMapping = {
  * These are used when estimating duration for distance steps without pace targets
  */
 const DEFAULT_PACE = {
-  running: 0.36,      // ~6:00 min/km or ~9:40 min/mile
-  cycling: 0.05,      // ~3:00 min/km or ~5:00 min/mile (12 mph)
-  swimming: 0.5,      // ~8:20 min/100m
-  walking: 0.3,       // ~5:00 min/km
-  strength: 0.36,     // Same as running
-  cardio: 0.36,       // Same as running
+  running: 0.36, // ~6:00 min/km or ~9:40 min/mile
+  cycling: 0.05, // ~3:00 min/km or ~5:00 min/mile (12 mph)
+  swimming: 0.5, // ~8:20 min/100m
+  walking: 0.3, // ~5:00 min/km
+  strength: 0.36, // Same as running
+  cardio: 0.36, // Same as running
 }
 
 /**
@@ -93,6 +108,11 @@ export function makePayload(workout) {
   payload.estimatedDurationInSecs = calculateEstimatedDuration(payload.workoutSegments)
 
   return payload
+}
+
+function getStepDescription(step) {
+  const description = step.stepDescription || step.stepName || step.stepType || 'Workout step'
+  return String(description).trim() || 'Workout step'
 }
 
 /**
@@ -134,7 +154,11 @@ function processSteps(stepsArray, stepOrder) {
  */
 function processStep(step, stepOrder) {
   // Handle both stepType and endConditionType for identifying repeat steps
-  if (step.numberOfIterations && step.steps && (step.stepType === 'repeat' || step.endConditionType === 'repeat')) {
+  if (
+    step.numberOfIterations &&
+    step.steps &&
+    (step.stepType === 'repeat' || step.endConditionType === 'repeat')
+  ) {
     return processRepeatStep(step, stepOrder)
   } else if (!step.stepType) {
     throw new Error(`Missing stepType for step: ${step.stepName || 'Unnamed Step'}`)
@@ -157,8 +181,8 @@ function processRegularStep(step, stepOrder) {
     stepOrder: stepOrder,
     stepType: stepType,
     type: 'ExecutableStepDTO',
-    description: step.stepDescription || '',
-    stepAudioNote: null
+    description: getStepDescription(step),
+    stepAudioNote: null,
   }
 
   // Process end condition (time or distance)
@@ -169,20 +193,22 @@ function processRegularStep(step, stepOrder) {
     }
 
     workoutStep.endCondition = endConditionTypeMapping.distance
-    workoutStep.endConditionValue = step.stepDistance * distanceUnit.factor  // Convert to meters
+    workoutStep.endConditionValue = step.stepDistance * distanceUnit.factor // Convert to meters
 
     // When using km for distances >= 1000m, or miles for imperial, make sure
     // the input value is preserved in the native unit rather than being converted
     if (distanceUnit.unitKey === 'km' && workoutStep.endConditionValue >= 1000) {
-      workoutStep.endConditionValue = Math.round(workoutStep.endConditionValue);
+      workoutStep.endConditionValue = Math.round(workoutStep.endConditionValue)
     } else if (distanceUnit.unitKey === 'mile') {
       // For miles, preserve the exact conversion factor
-      workoutStep.endConditionValue = step.stepDistance * 1609.344;
+      workoutStep.endConditionValue = step.stepDistance * 1609.344
     }
   } else {
     // Default to time-based
     if (typeof step.stepDuration !== 'number' || step.stepDuration <= 0) {
-      throw new Error(`Invalid or missing stepDuration for step: ${step.stepName || 'Unnamed Step'}`)
+      throw new Error(
+        `Invalid or missing stepDuration for step: ${step.stepName || 'Unnamed Step'}`,
+      )
     }
 
     workoutStep.endCondition = endConditionTypeMapping.time
@@ -197,7 +223,7 @@ function processRegularStep(step, stepOrder) {
 
   // Explicitly set targetValueUnit to null as seen in the valid payload
   if (workoutStep.targetType && workoutStep.targetType.workoutTargetTypeKey !== 'no.target') {
-    workoutStep.targetValueUnit = null;
+    workoutStep.targetValueUnit = null
   }
 
   stepOrder += 1
@@ -327,27 +353,27 @@ function convertValueToUnit(value, unit) {
  * @returns {number} - The estimated duration of the workout in seconds.
  */
 function calculateEstimatedDuration(workoutSegments) {
-  let duration = 0;
-  const sportType = workoutSegments[0]?.sportType?.sportTypeKey || 'running';
+  let duration = 0
+  const sportType = workoutSegments[0]?.sportType?.sportTypeKey || 'running'
 
   workoutSegments.forEach((segment) => {
     segment.workoutSteps.forEach((step) => {
       if (step.type === 'ExecutableStepDTO') {
         if (step.endCondition.conditionTypeKey === 'distance') {
           // For distance-based steps, estimate duration based on pace
-          duration += estimateStepDuration(step, sportType);
+          duration += estimateStepDuration(step, sportType)
         } else {
           // For time-based steps, use the step duration directly
-          duration += step.endConditionValue;
+          duration += step.endConditionValue
         }
       } else if (step.type === 'RepeatGroupDTO') {
         // Create a fake segment containing just the child steps of the repeat
-        const childStepsDuration = calculateStepsDuration(step.workoutSteps, sportType);
-        duration += step.numberOfIterations * childStepsDuration;
+        const childStepsDuration = calculateStepsDuration(step.workoutSteps, sportType)
+        duration += step.numberOfIterations * childStepsDuration
       }
-    });
-  });
-  return duration;
+    })
+  })
+  return duration
 }
 
 /**
@@ -357,22 +383,22 @@ function calculateEstimatedDuration(workoutSegments) {
  * @returns {number} - The estimated duration in seconds.
  */
 function calculateStepsDuration(steps, sportType) {
-  let duration = 0;
+  let duration = 0
 
   steps.forEach((step) => {
     if (step.type === 'ExecutableStepDTO') {
       if (step.endCondition.conditionTypeKey === 'distance') {
-        duration += estimateStepDuration(step, sportType);
+        duration += estimateStepDuration(step, sportType)
       } else {
-        duration += step.endConditionValue;
+        duration += step.endConditionValue
       }
     } else if (step.type === 'RepeatGroupDTO') {
-      const childStepsDuration = calculateStepsDuration(step.workoutSteps, sportType);
-      duration += step.numberOfIterations * childStepsDuration;
+      const childStepsDuration = calculateStepsDuration(step.workoutSteps, sportType)
+      duration += step.numberOfIterations * childStepsDuration
     }
-  });
+  })
 
-  return duration;
+  return duration
 }
 
 /**
@@ -382,43 +408,75 @@ function calculateStepsDuration(steps, sportType) {
  * @returns {number} - The estimated duration in seconds.
  */
 function estimateStepDuration(step, sportType) {
-  const distance = step.endConditionValue; // distance in meters
-  let pacePerMeter;
+  const distance = step.endConditionValue // distance in meters
+  let pacePerMeter
 
   // Check if the step has a pace target
-  if (step.targetType && step.targetType.workoutTargetTypeKey === 'pace.zone' && 
-      step.targetValueOne && step.targetValueTwo) {
+  if (
+    step.targetType &&
+    step.targetType.workoutTargetTypeKey === 'pace.zone' &&
+    step.targetValueOne &&
+    step.targetValueTwo
+  ) {
     // Use the average of min and max pace values
     // targetValueOne and targetValueTwo are in m/s, so we convert to seconds per meter
-    pacePerMeter = 2 / (step.targetValueOne + step.targetValueTwo);
-  } else if (step.targetType && step.targetType.workoutTargetTypeKey === 'speed.zone' && 
-             step.targetValueOne && step.targetValueTwo) {
+    pacePerMeter = 2 / (step.targetValueOne + step.targetValueTwo)
+  } else if (
+    step.targetType &&
+    step.targetType.workoutTargetTypeKey === 'speed.zone' &&
+    step.targetValueOne &&
+    step.targetValueTwo
+  ) {
     // If speed target, use the average speed in m/s
-    const avgSpeed = (step.targetValueOne + step.targetValueTwo) / 2;
-    pacePerMeter = 1 / avgSpeed;
+    const avgSpeed = (step.targetValueOne + step.targetValueTwo) / 2
+    pacePerMeter = 1 / avgSpeed
   } else {
     // Use default pace value based on sport type
-    pacePerMeter = DEFAULT_PACE[sportType.toLowerCase()] || DEFAULT_PACE.running;
+    pacePerMeter = DEFAULT_PACE[sportType.toLowerCase()] || DEFAULT_PACE.running
   }
 
   // Calculate estimated duration
-  return distance * pacePerMeter;
+  return distance * pacePerMeter
 }
 
-export function createWorkout(workout, callback) {
+export function createWorkout(workout, callback, errorCallback = () => {}) {
   let garminVersion = document.getElementById('garmin-connect-version')
   let xhr = new XMLHttpRequest()
+  xhr.timeout = 30000
 
   xhr.onreadystatechange = function () {
-    if (this.readyState == 4 && this.status == 200) {
-      callback(JSON.parse(xhr.response))
+    if (this.readyState !== 4) {
+      return
     }
+
+    if (this.status >= 200 && this.status < 300) {
+      try {
+        callback(JSON.parse(xhr.response))
+      } catch {
+        errorCallback(new Error('Garmin returned an invalid JSON response.'))
+      }
+      return
+    }
+
+    errorCallback(new Error(formatGarminUploadError(this.status, xhr.responseText)))
   }
 
-  let localStoredToken = window.localStorage.getItem('token')
-  let accessTokenMap = JSON.parse(localStoredToken)
-  let token = accessTokenMap.access_token
-  const payload = makePayload(workout)
+  xhr.onerror = function () {
+    errorCallback(new Error('Garmin upload failed due to a network error.'))
+  }
+
+  xhr.ontimeout = function () {
+    errorCallback(new Error('Garmin upload timed out after 30 seconds.'))
+  }
+
+  let token = getGarminAccessToken()
+  let payload
+  try {
+    payload = makePayload(workout)
+  } catch (error) {
+    errorCallback(new Error(`Could not prepare Garmin workout: ${error.message}`))
+    return
+  }
 
   console.debug('[OGW] Payload:', JSON.stringify(payload))
 
@@ -426,19 +484,67 @@ export function createWorkout(workout, callback) {
   xhr.setRequestHeader('Content-Type', 'application/json')
   xhr.setRequestHeader('Accept', 'application/json, text/javascript, */*; q=0.01')
 
-  xhr.setRequestHeader('x-app-ver', garminVersion.innerText || '4.27.1.0')
+  const csrfToken = getGarminCsrfToken()
+  if (csrfToken) {
+    xhr.setRequestHeader('connect-csrf-token', csrfToken)
+  }
+
+  xhr.setRequestHeader('x-app-ver', garminVersion?.innerText || '4.27.1.0')
   xhr.setRequestHeader('x-requested-with', 'XMLHttpRequest')
   xhr.setRequestHeader('x-lang', 'it-IT')
   xhr.setRequestHeader('nk', 'NT')
   xhr.setRequestHeader('Di-Backend', 'connectapi.garmin.com')
-  xhr.setRequestHeader('authorization', 'Bearer ' + token)
+  if (token) {
+    xhr.setRequestHeader('authorization', 'Bearer ' + token)
+  }
   xhr.withCredentials = true
 
   xhr.send(JSON.stringify(payload))
 }
 
-export function goToWorkout(id) {
-  window.location.assign(workoutUrl + id)
+function formatGarminUploadError(status, responseText) {
+  const details = parseGarminErrorMessage(responseText)
+  return `Garmin upload failed (${status}): ${details}`
+}
+
+function parseGarminErrorMessage(responseText) {
+  if (!responseText) {
+    return 'No response body returned.'
+  }
+
+  try {
+    const payload = JSON.parse(responseText)
+    return (
+      payload?.message ||
+      payload?.error?.message ||
+      payload?.errorMessage ||
+      payload?.errors?.[0]?.message ||
+      responseText
+    )
+  } catch {
+    return responseText
+  }
+}
+
+function getGarminCsrfToken() {
+  return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || null
+}
+
+function getGarminAccessToken() {
+  const localStoredToken = window.localStorage.getItem('token')
+  if (!localStoredToken) {
+    return null
+  }
+
+  try {
+    return JSON.parse(localStoredToken)?.access_token || null
+  } catch {
+    return null
+  }
+}
+
+export function goToWorkout() {
+  window.location.assign(workoutsUrl)
 }
 
 export const workoutExamples = {
@@ -600,123 +706,123 @@ export const workoutExamples = {
   },
 
   distanceBasedWorkout: {
-    name: "Distance-based Interval Workout",
-    type: "running",
+    name: 'Distance-based Interval Workout',
+    type: 'running',
     steps: [
       {
-        stepName: "Warm Up",
-        stepDescription: "Warm up with easy jogging",
-        endConditionType: "distance",
+        stepName: 'Warm Up',
+        stepDescription: 'Warm up with easy jogging',
+        endConditionType: 'distance',
         stepDistance: 1,
-        distanceUnit: "km",
-        stepType: "warmup",
+        distanceUnit: 'km',
+        stepType: 'warmup',
         target: {
-          type: "no target"
-        }
+          type: 'no target',
+        },
       },
       {
-        stepType: "repeat",
+        stepType: 'repeat',
         numberOfIterations: 5,
         steps: [
           {
-            stepName: "Fast 400m",
-            stepDescription: "Run fast for 400 meters",
-            endConditionType: "distance",
+            stepName: 'Fast 400m',
+            stepDescription: 'Run fast for 400 meters',
+            endConditionType: 'distance',
             stepDistance: 400,
-            distanceUnit: "m",
-            stepType: "interval",
+            distanceUnit: 'm',
+            stepType: 'interval',
             target: {
-              type: "pace",
+              type: 'pace',
               value: [4, 4.5],
-              unit: "min_per_km"
-            }
+              unit: 'min_per_km',
+            },
           },
           {
-            stepName: "Recovery",
-            stepDescription: "Easy jog for recovery",
-            endConditionType: "distance",
+            stepName: 'Recovery',
+            stepDescription: 'Easy jog for recovery',
+            endConditionType: 'distance',
             stepDistance: 200,
-            distanceUnit: "m",
-            stepType: "recovery",
+            distanceUnit: 'm',
+            stepType: 'recovery',
             target: {
-              type: "heart rate",
+              type: 'heart rate',
               value: [120, 130],
-              unit: "bpm"
-            }
-          }
-        ]
+              unit: 'bpm',
+            },
+          },
+        ],
       },
       {
-        stepName: "Cool Down",
-        stepDescription: "Slow jog to cool down",
-        endConditionType: "distance",
+        stepName: 'Cool Down',
+        stepDescription: 'Slow jog to cool down',
+        endConditionType: 'distance',
         stepDistance: 1,
-        distanceUnit: "km",
-        stepType: "cooldown",
+        distanceUnit: 'km',
+        stepType: 'cooldown',
         target: {
-          type: "no target"
-        }
-      }
-    ]
+          type: 'no target',
+        },
+      },
+    ],
   },
 
   mixedWorkout: {
-    name: "Mixed Time and Distance Workout",
-    type: "running",
+    name: 'Mixed Time and Distance Workout',
+    type: 'running',
     steps: [
       {
-        stepName: "Warm Up",
-        stepDescription: "Warm up with easy jogging",
-        endConditionType: "time",
+        stepName: 'Warm Up',
+        stepDescription: 'Warm up with easy jogging',
+        endConditionType: 'time',
         stepDuration: 600,
-        stepType: "warmup",
+        stepType: 'warmup',
         target: {
-          type: "heart rate",
+          type: 'heart rate',
           value: [120, 130],
-          unit: "bpm"
-        }
+          unit: 'bpm',
+        },
       },
       {
-        stepType: "repeat",
+        stepType: 'repeat',
         numberOfIterations: 3,
         steps: [
           {
-            stepName: "Mile Repeat",
-            stepDescription: "Run one mile at target pace",
-            endConditionType: "distance",
+            stepName: 'Mile Repeat',
+            stepDescription: 'Run one mile at target pace',
+            endConditionType: 'distance',
             stepDistance: 1,
-            distanceUnit: "mile",
-            stepType: "interval",
+            distanceUnit: 'mile',
+            stepType: 'interval',
             target: {
-              type: "pace",
+              type: 'pace',
               value: [4.5, 5],
-              unit: "min_per_km"
-            }
+              unit: 'min_per_km',
+            },
           },
           {
-            stepName: "Recovery",
-            stepDescription: "Recovery period",
-            endConditionType: "time",
+            stepName: 'Recovery',
+            stepDescription: 'Recovery period',
+            endConditionType: 'time',
             stepDuration: 180,
-            stepType: "recovery",
+            stepType: 'recovery',
             target: {
-              type: "heart rate",
+              type: 'heart rate',
               value: [120, 130],
-              unit: "bpm"
-            }
-          }
-        ]
+              unit: 'bpm',
+            },
+          },
+        ],
       },
       {
-        stepName: "Cool Down",
-        stepDescription: "Slow jog to cool down",
-        endConditionType: "time",
+        stepName: 'Cool Down',
+        stepDescription: 'Slow jog to cool down',
+        endConditionType: 'time',
         stepDuration: 600,
-        stepType: "cooldown",
+        stepType: 'cooldown',
         target: {
-          type: "no target"
-        }
-      }
-    ]
-  }
+          type: 'no target',
+        },
+      },
+    ],
+  },
 }

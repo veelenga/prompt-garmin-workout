@@ -15,16 +15,27 @@
       <div class="section">
         <div class="section-title">
           <label for="apiKey">OpenAI API Key:</label>
-          <a href="https://platform.openai.com/api-keys" target="_blank" class="link">how to get a key</a>
+          <a href="https://platform.openai.com/api-keys" target="_blank" class="link"
+            >how to get a key</a
+          >
         </div>
 
-        <input type="password" id="apiKey" placeholder="Enter your OpenAI API key">
+        <input type="password" id="apiKey" placeholder="Enter your OpenAI API key" />
+      </div>
+
+      <div class="section">
+        <div class="section-title">
+          <label for="baseUrl">API Base URL:</label>
+          <span class="hint">OpenAI compatible</span>
+        </div>
+
+        <input type="url" id="baseUrl" placeholder="https://api.openai.com/v1" />
       </div>
 
       <div class="section">
         <div class="section-title">
           <label for="modelSelect">Select OpenAI Model:</label>
-          <a href="https://platform.openai.com/docs/models" target="_blank" class="link">learn more</a>
+          <button id="detectModels" class="link-button" type="button">detect models</button>
         </div>
 
         <select id="modelSelect">
@@ -34,6 +45,12 @@
           <option value="o1-mini">O1 Mini</option>
           <option value="gpt-3.5-turbo">GPT-3.5 Turbo</option>
         </select>
+
+        <input
+          type="text"
+          id="customModel"
+          placeholder="Or enter any model name, e.g. gpt-4.1-mini"
+        />
       </div>
 
       <div class="button-container">
