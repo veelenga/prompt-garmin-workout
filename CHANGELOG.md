@@ -1,5 +1,12 @@
 ## Unreleased
 
+## 1.1.0
+
+* add OpenAI-compatible provider support (custom base URL and model detection)
+* resolve open Dependabot CVEs across dev dependencies (vite, eslint, rollup, undici, minimatch, picomatch, flatted, postcss)
+* upgrade to eslint 10
+* fix gap between Create a Workout and Generate with AI buttons
+
 ## 1.0.3
 
 * add support of distance targets
