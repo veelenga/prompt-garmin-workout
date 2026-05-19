@@ -5,13 +5,14 @@ export const EVENTS = {
 
 export const RUNTIME_MESSAGES = {
   generateWorkout: 'GenerateWorkout',
+  detectModels: 'DetectModels',
   noAPIKey: 'NoAPIKey',
   error: 'Error',
 }
 
 export const SELECTORS = {
   garminConnect: {
-    createWorkoutButton: 'button.create-workout',
+    createWorkoutButton: 'button.create-workout, button, a[role="button"]',
   },
   plugin: {
     generateWithAIButton: '#ogw-create-workout',

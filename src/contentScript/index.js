@@ -5,6 +5,7 @@ import './elements.css'
 
 let cleanupFunction = null
 let observer = null
+let mountTimer = null
 
 function setupListeners() {
   document.addEventListener(EVENTS.indexPageReady, handleIndexPageReady)
@@ -17,6 +18,10 @@ function removeListeners() {
 }
 
 function handleIndexPageReady() {
+  if (!isWorkoutsPage()) {
+    return
+  }
+
   if (cleanupFunction) {
     console.debug('[OGW] => Cleanup listeners')
     cleanupFunction()
@@ -30,32 +35,28 @@ function handleNewPromptFired(event) {
 
 export function waitPageLoaded() {
   let MutationObserver = window.MutationObserver || window.WebKitMutationObserver
-  observer = new MutationObserver(function (mutations) {
-    var evtName = null
-    var evt = null
-    let mutation = mutations.pop()
-    let target = mutation.target
-    let isWorkoutIndexPage =
-      target.classList.contains('body-workouts-index') &&
-      mutation.oldValue.indexOf('body-workouts-index') !== -1
-
-    if (isWorkoutIndexPage) {
-      evtName = EVENTS.indexPageReady
-      console.debug('[OGW] => Workout index page is ready')
-    }
-
-    if (evtName) {
-      evt = new Event(evtName)
-      document.dispatchEvent(evt)
-    }
-  })
+  observer = new MutationObserver(scheduleMount)
 
   observer.observe(document.getElementsByTagName('body')[0], {
-    subtree: false,
+    childList: true,
+    subtree: true,
     attributes: true,
-    attributeOldValue: true,
-    attributeFilter: ['class'],
   })
+
+  scheduleMount()
+}
+
+function scheduleMount() {
+  clearTimeout(mountTimer)
+  mountTimer = setTimeout(() => {
+    if (isWorkoutsPage()) {
+      document.dispatchEvent(new Event(EVENTS.indexPageReady))
+    }
+  }, 300)
+}
+
+function isWorkoutsPage() {
+  return window.location.pathname.includes('/workouts')
 }
 
 function cleanup() {
@@ -65,6 +66,7 @@ function cleanup() {
   if (observer) {
     observer.disconnect()
   }
+  clearTimeout(mountTimer)
   removeListeners()
 }
 
