@@ -1,7 +1,7 @@
 {
   "name": "prompt-garmin-workout",
   "displayName": "Prompt Garmin Workout",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "author": "Vitalii Elenhaupt",
   "description": "Create Garmin Connect workouts using generative AI",
   "type": "module",
