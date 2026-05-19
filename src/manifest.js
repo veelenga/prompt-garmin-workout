@@ -35,4 +35,5 @@ export default defineManifest({
     },
   ],
   permissions: ['storage'],
+  optional_host_permissions: ['<all_urls>'],
 })

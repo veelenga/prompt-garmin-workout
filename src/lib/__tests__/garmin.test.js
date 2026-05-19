@@ -180,6 +180,34 @@ describe('makePayload Function', () => {
     expect(() => makePayload(workout)).toThrow()
   })
 
+  test('uses a non-empty instruction fallback when stepDescription is missing', () => {
+    const workout = {
+      name: 'Instruction Fallback Workout',
+      type: 'cycling',
+      steps: [
+        {
+          stepName: 'Warmup',
+          stepDuration: 600,
+          stepType: 'warmup',
+        },
+        {
+          stepDuration: 1200,
+          stepType: 'interval',
+          target: {
+            type: 'power',
+            value: [260, 280],
+          },
+        },
+      ],
+    }
+
+    const payload = makePayload(workout)
+    const steps = payload.workoutSegments[0].workoutSteps
+
+    expect(steps[0].description).toBe('Warmup')
+    expect(steps[1].description).toBe('interval')
+  })
+
   test('creates payload for a workout with nested repeats', () => {
     const workout = {
       name: 'Nested Repeats Workout',

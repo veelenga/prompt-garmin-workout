@@ -13,9 +13,24 @@ const trustedUrls = {
   },
 }
 
+const GENERATION_RESPONSE_TIMEOUT_MS = 90000
+
 export function requestWorkout(prompt) {
   const generateButton = document.querySelector(SELECTORS.plugin.submitPromptBtn)
   const errorElement = document.querySelector(SELECTORS.plugin.errorMessage)
+  let isDone = false
+  const timeoutId = setTimeout(() => {
+    if (isDone) {
+      return
+    }
+
+    isDone = true
+    showError(
+      errorElement,
+      'Generation timed out after 90 seconds. Try a faster model or shorter prompt.',
+    )
+    setButtonLoading(generateButton, false)
+  }, GENERATION_RESPONSE_TIMEOUT_MS)
 
   hideError(errorElement)
   setButtonLoading(generateButton, true)
@@ -23,9 +38,29 @@ export function requestWorkout(prompt) {
   chrome.runtime.sendMessage(
     { type: RUNTIME_MESSAGES.generateWorkout, prompt },
     async (response) => {
+      if (isDone) {
+        return
+      }
+
+      isDone = true
+      clearTimeout(timeoutId)
+
       switch (response?.type) {
         case RUNTIME_MESSAGES.generateWorkout:
-          return createWorkout(response.workout, (response) => goToWorkout(response.workoutId))
+          try {
+            return createWorkout(
+              response.workout,
+              (response) => goToWorkout(response.workoutId),
+              (error) => {
+                showError(errorElement, error.message)
+                setButtonLoading(generateButton, false)
+              },
+            )
+          } catch (error) {
+            showError(errorElement, error.message)
+            setButtonLoading(generateButton, false)
+            return
+          }
         case RUNTIME_MESSAGES.noAPIKey:
           showError(errorElement, 'Set up your OpenAI API key in extension settings to continue.')
           break
@@ -59,17 +94,36 @@ function setButtonLoading(button, isLoading) {
 }
 
 function showError(element, message) {
-  let htmlMessage = message
-  Object.values(trustedUrls).forEach(({ pattern, text }) => {
-    if (message.includes(pattern)) {
-      htmlMessage = message.replace(
-        pattern,
-        `<a href="${pattern}" target="_blank" rel="noopener noreferrer" class="ogw-error-link">${text}</a>`,
-      )
+  if (!element) {
+    return
+  }
+
+  const safeMessage = String(message || 'Something went wrong.')
+  element.textContent = ''
+
+  const trustedUrl = Object.values(trustedUrls).find(({ pattern }) => safeMessage.includes(pattern))
+  if (!trustedUrl) {
+    element.textContent = safeMessage
+    element.style.display = 'block'
+    return
+  }
+
+  const parts = safeMessage.split(trustedUrl.pattern)
+  parts.forEach((part, index) => {
+    if (part) {
+      element.appendChild(document.createTextNode(part))
+    }
+
+    if (index < parts.length - 1) {
+      const link = document.createElement('a')
+      link.href = trustedUrl.pattern
+      link.target = '_blank'
+      link.rel = 'noopener noreferrer'
+      link.className = 'ogw-error-link'
+      link.textContent = trustedUrl.text
+      element.appendChild(link)
     }
   })
-
-  element.innerHTML = htmlMessage
   element.style.display = 'block'
 }
 
