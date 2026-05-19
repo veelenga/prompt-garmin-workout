@@ -1,5 +1,7 @@
 const addWorkoutEndpoint = 'https://connect.garmin.com/gc-api/workout-service/workout'
 const workoutsUrl = 'https://connect.garmin.com/app/workouts'
+const GARMIN_UPLOAD_TIMEOUT_MS = 30000
+const GARMIN_UPLOAD_TIMEOUT_SECONDS = GARMIN_UPLOAD_TIMEOUT_MS / 1000
 
 export const sportTypeMapping = {
   running: { sportTypeId: 1, sportTypeKey: 'running', displayOrder: 1 },
@@ -440,9 +442,9 @@ function estimateStepDuration(step, sportType) {
 }
 
 export function createWorkout(workout, callback, errorCallback = () => {}) {
-  let garminVersion = document.getElementById('garmin-connect-version')
-  let xhr = new XMLHttpRequest()
-  xhr.timeout = 30000
+  const garminVersion = document.getElementById('garmin-connect-version')
+  const xhr = new XMLHttpRequest()
+  xhr.timeout = GARMIN_UPLOAD_TIMEOUT_MS
 
   xhr.onreadystatechange = function () {
     if (this.readyState !== 4) {
@@ -466,10 +468,10 @@ export function createWorkout(workout, callback, errorCallback = () => {}) {
   }
 
   xhr.ontimeout = function () {
-    errorCallback(new Error('Garmin upload timed out after 30 seconds.'))
+    errorCallback(new Error(`Garmin upload timed out after ${GARMIN_UPLOAD_TIMEOUT_SECONDS} seconds.`))
   }
 
-  let token = getGarminAccessToken()
+  const token = getGarminAccessToken()
   let payload
   try {
     payload = makePayload(workout)
