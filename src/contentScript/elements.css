@@ -197,7 +197,7 @@ button#ogw-create-workout {
 }
 
 .ogw-create-workout-button {
-  margin-left: 0.75rem;
+  margin-left: 0.75rem !important;
   background-color: #111111 !important;
   border-color: #111111 !important;
   color: #ffffff !important;

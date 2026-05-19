@@ -80,7 +80,7 @@ const DEFAULT_PACE = {
  * @returns {Object} - The formatted payload ready to be sent to Garmin.
  */
 export function makePayload(workout) {
-  let stepOrder = 1
+  const stepOrder = 1
   const sportType = getSportType(workout.type)
   const payload = {
     sportType: sportType,
@@ -104,7 +104,6 @@ export function makePayload(workout) {
 
   const result = processSteps(workout.steps, stepOrder)
   segment.workoutSteps = result.steps
-  stepOrder = result.stepOrder
 
   payload.workoutSegments.push(segment)
   payload.estimatedDurationInSecs = calculateEstimatedDuration(payload.workoutSegments)
