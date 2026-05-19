@@ -433,4 +433,73 @@ describe('generateWorkout', () => {
 
     expect(workout.name).toBe('Compatible Relay')
   })
+
+  test('extracts JSON wrapped in a ```json fenced code block', async () => {
+    const workoutJson = JSON.stringify({
+      name: 'Fenced Workout',
+      type: 'running',
+      steps: [{ stepDuration: 600, stepType: 'warmup' }],
+    })
+
+    nock('https://api.openai.com')
+      .post('/v1/chat/completions')
+      .reply(200, {
+        choices: [
+          {
+            message: {
+              content: '```json\n' + workoutJson + '\n```',
+            },
+          },
+        ],
+      })
+
+    const workout = await generateWorkout('test-api-key', 'gpt-4', '10 min warmup')
+    expect(workout.name).toBe('Fenced Workout')
+  })
+
+  test('extracts JSON wrapped in a generic fenced code block', async () => {
+    const workoutJson = JSON.stringify({
+      name: 'Fenced Generic',
+      type: 'cycling',
+      steps: [{ stepDuration: 600, stepType: 'warmup' }],
+    })
+
+    nock('https://api.openai.com')
+      .post('/v1/chat/completions')
+      .reply(200, {
+        choices: [
+          {
+            message: {
+              content: '```\n' + workoutJson + '\n```',
+            },
+          },
+        ],
+      })
+
+    const workout = await generateWorkout('test-api-key', 'gpt-4', '10 min warmup')
+    expect(workout.name).toBe('Fenced Generic')
+  })
+
+  test('extracts JSON when the model adds prose before and after braces', async () => {
+    const workoutJson = JSON.stringify({
+      name: 'Prose Wrapped',
+      type: 'running',
+      steps: [{ stepDuration: 600, stepType: 'warmup' }],
+    })
+
+    nock('https://api.openai.com')
+      .post('/v1/chat/completions')
+      .reply(200, {
+        choices: [
+          {
+            message: {
+              content: `Here is the workout you requested:\n\n${workoutJson}\n\nLet me know if you want to tweak anything.`,
+            },
+          },
+        ],
+      })
+
+    const workout = await generateWorkout('test-api-key', 'gpt-4', '10 min warmup')
+    expect(workout.name).toBe('Prose Wrapped')
+  })
 })
