@@ -2,9 +2,10 @@ import { ERRORS } from '../lib/constants.js'
 import { DEFAULT_OPENAI_BASE_URL, normalizeBaseUrl } from './openaiCompatibleApi.js'
 
 const CHAT_COMPLETION_TIMEOUT_MS = 60000
-// Compatibility retries remove optional request fields one by one when a provider rejects them.
-// The cap prevents loops while allowing instructions plus the common optional parameters to settle.
-const MAX_COMPATIBILITY_RETRIES = 6
+// Compatibility retries drop optional request fields one at a time when a provider rejects them.
+// Validation failures return fast, so the cap is sized to fit the popup-side 90s budget
+// (a few fast validation rejections plus one real chat-completion call).
+const MAX_COMPATIBILITY_RETRIES = 4
 
 /**
  * Generates a workout based on the description.
