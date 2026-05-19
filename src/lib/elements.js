@@ -1,4 +1,4 @@
-﻿import { EVENTS, SELECTORS } from './constants'
+import { EVENTS, SELECTORS } from './constants'
 /**
  * Initializes the Generate with AI button and modal.
  * @param {string} text - The text to display on the button.
