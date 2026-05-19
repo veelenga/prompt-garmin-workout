@@ -36,11 +36,9 @@
     "jest": "^30.4.2",
     "nock": "^14.0.15",
     "prettier": "^3.8.3",
-    "vite": "^8.0.13"
+    "vite": "^7.3.3"
   },
   "overrides": {
-    "@crxjs/vite-plugin": {
-      "rollup": "^2.80.0"
-    }
+    "rollup@<2.80.0": "^2.80.0"
   }
 }
