@@ -19,13 +19,13 @@ export default defineManifest({
     default_icon: 'img/logo-48.png',
   },
   background: {
-    service_worker: 'src/background/index.js',
+    service_worker: 'src/background/service-worker.js',
     type: 'module',
   },
   content_scripts: [
     {
       matches: ['https://connect.garmin.com/*'],
-      js: ['src/contentScript/index.js'],
+      js: ['src/contentScript/content-script.js'],
     },
   ],
   web_accessible_resources: [
