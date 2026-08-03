@@ -35,7 +35,7 @@
     "gulp-zip": "^6.1.0",
     "jest": "^30.4.2",
     "nock": "^14.0.17",
-    "prettier": "^3.9.5",
+    "prettier": "^3.9.6",
     "vite": "^8.1.5"
   },
   "overrides": {
