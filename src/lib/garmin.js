@@ -33,10 +33,19 @@ export const targetTypeMapping = {
   pace: { workoutTargetTypeId: 6, workoutTargetTypeKey: 'pace.zone', displayOrder: 6 },
 }
 
+const METERS_PER_KM = 1000
+const METERS_PER_MILE = 1609.344
+const METERS_PER_YARD = 0.9144
+const SECONDS_PER_MINUTE = 60
+const SECONDS_PER_HOUR = 3600
+const MPS_PER_KMH = METERS_PER_KM / SECONDS_PER_HOUR
+const MPS_PER_MPH = METERS_PER_MILE / SECONDS_PER_HOUR
+
 export const distanceUnitMapping = {
-  m: { unitId: 2, unitKey: 'm', factor: 1 },
-  km: { unitId: 3, unitKey: 'km', factor: 1000 },
-  mile: { unitId: 4, unitKey: 'mile', factor: 1609.344 },
+  m: { unitKey: 'm', factor: 1 },
+  km: { unitKey: 'km', factor: METERS_PER_KM },
+  mile: { unitKey: 'mile', factor: METERS_PER_MILE },
+  yd: { unitKey: 'yd', factor: METERS_PER_YARD },
 }
 
 export const endConditionTypeMapping = {
@@ -201,9 +210,6 @@ function processRegularStep(step, stepOrder, childStepId) {
     // the input value is preserved in the native unit rather than being converted
     if (distanceUnit.unitKey === 'km' && workoutStep.endConditionValue >= 1000) {
       workoutStep.endConditionValue = Math.round(workoutStep.endConditionValue)
-    } else if (distanceUnit.unitKey === 'mile') {
-      // For miles, preserve the exact conversion factor
-      workoutStep.endConditionValue = step.stepDistance * 1609.344
     }
   } else {
     // Default to time-based
@@ -343,7 +349,13 @@ function calculatePaceRange(pace) {
 function convertValueToUnit(value, unit) {
   switch (unit) {
     case 'min_per_km':
-      return 1000 / (value * 60)
+      return METERS_PER_KM / (value * SECONDS_PER_MINUTE)
+    case 'min_per_mile':
+      return METERS_PER_MILE / (value * SECONDS_PER_MINUTE)
+    case 'kmh':
+      return value * MPS_PER_KMH
+    case 'mph':
+      return value * MPS_PER_MPH
     default:
       return value
   }

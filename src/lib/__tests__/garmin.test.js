@@ -605,6 +605,74 @@ describe('makePayload Function', () => {
     expect(recoveryStep.endConditionValue).toBe(400) // 400 meters
   })
 
+  test('creates payload for an imperial units workout', () => {
+    const workout = {
+      name: 'Imperial Intervals',
+      type: 'running',
+      steps: [
+        {
+          stepName: 'Swim Yards',
+          stepDescription: 'Swim 500 yards',
+          endConditionType: 'distance',
+          stepDistance: 500,
+          distanceUnit: 'yd',
+          stepType: 'warmup',
+        },
+        {
+          stepName: 'Mile Pace',
+          stepDescription: 'Run at 7:30-8:00 per mile',
+          endConditionType: 'distance',
+          stepDistance: 1,
+          distanceUnit: 'mile',
+          stepType: 'interval',
+          target: {
+            type: 'pace',
+            value: [7.5, 8],
+            unit: 'min_per_mile',
+          },
+        },
+        {
+          stepName: 'Speed Mph',
+          stepDescription: 'Ride at 18 mph',
+          endConditionType: 'time',
+          stepDuration: 600,
+          stepType: 'interval',
+          target: {
+            type: 'speed',
+            value: [17, 19],
+            unit: 'mph',
+          },
+        },
+        {
+          stepName: 'Speed Kmh',
+          stepDescription: 'Ride at 30-35 kmh',
+          endConditionType: 'time',
+          stepDuration: 600,
+          stepType: 'interval',
+          target: {
+            type: 'speed',
+            value: [30, 35],
+            unit: 'kmh',
+          },
+        },
+      ],
+    }
+
+    const payload = makePayload(workout)
+    const steps = payload.workoutSegments[0].workoutSteps
+
+    expect(steps[0].endConditionValue).toBeCloseTo(457.2) // 500 yards in meters
+
+    expect(steps[1].targetValueOne).toBeCloseTo(1609.344 / (7.5 * 60)) // 7:30/mile in m/s
+    expect(steps[1].targetValueTwo).toBeCloseTo(1609.344 / (8 * 60)) // 8:00/mile in m/s
+
+    expect(steps[2].targetValueOne).toBeCloseTo(17 * 0.44704) // 17 mph in m/s
+    expect(steps[2].targetValueTwo).toBeCloseTo(19 * 0.44704) // 19 mph in m/s
+
+    expect(steps[3].targetValueOne).toBeCloseTo(30 / 3.6) // 30 kmh in m/s
+    expect(steps[3].targetValueTwo).toBeCloseTo(35 / 3.6) // 35 kmh in m/s
+  })
+
   test('creates payload for a repeating distance-based workout', () => {
     const workout = {
       name: 'Interval Repeats',
