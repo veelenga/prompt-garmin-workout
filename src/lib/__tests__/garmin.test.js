@@ -140,9 +140,14 @@ describe('makePayload Function', () => {
     const repeatStep = payload.workoutSegments[0].workoutSteps[1]
     expect(repeatStep.type).toBe('RepeatGroupDTO')
     expect(repeatStep.numberOfIterations).toBe(5)
+    expect(repeatStep.endConditionValue).toBe(5)
+    expect(repeatStep.skipLastRestStep).toBe(false)
+    expect(repeatStep.childStepId).toBe(1)
     expect(repeatStep.workoutSteps.length).toBe(2)
+    expect(payload.workoutSegments[0].workoutSteps[0].childStepId).toBeNull()
     // Check target type in interval
     const intervalStep = repeatStep.workoutSteps[0]
+    expect(intervalStep.childStepId).toBe(1)
     expect(intervalStep.targetType).toEqual({
       displayOrder: 2,
       workoutTargetTypeId: 2,
@@ -271,8 +276,16 @@ describe('makePayload Function', () => {
     const repeatStep = payload.workoutSegments[0].workoutSteps[1]
     expect(repeatStep.type).toBe('RepeatGroupDTO')
     expect(repeatStep.numberOfIterations).toBe(2)
-    expect(repeatStep.workoutSteps[0].type).toBe('RepeatGroupDTO')
-    expect(repeatStep.workoutSteps[0].numberOfIterations).toBe(3)
+    expect(repeatStep.childStepId).toBe(1)
+    const innerRepeat = repeatStep.workoutSteps[0]
+    expect(innerRepeat.type).toBe('RepeatGroupDTO')
+    expect(innerRepeat.numberOfIterations).toBe(3)
+    expect(innerRepeat.childStepId).toBe(2)
+    expect(innerRepeat.workoutSteps[0].childStepId).toBe(2)
+    expect(innerRepeat.workoutSteps[1].childStepId).toBe(2)
+    expect(repeatStep.workoutSteps[1].childStepId).toBe(1)
+    expect(payload.workoutSegments[0].workoutSteps[0].childStepId).toBeNull()
+    expect(payload.workoutSegments[0].workoutSteps[2].childStepId).toBeNull()
   })
 
   test('creates payload for a strength workout with custom steps', () => {
@@ -570,7 +583,7 @@ describe('makePayload Function', () => {
           stepDistance: 400,
           distanceUnit: 'm',
           stepType: 'recovery',
-        }
+        },
       ],
     }
 
@@ -802,7 +815,7 @@ describe('makePayload Function', () => {
     // Since pace is converted to m/s and back, we use approximate matching
     expect(payload.estimatedDurationInSecs).toBeGreaterThan(1500)
     expect(payload.estimatedDurationInSecs).toBeLessThan(1650)
-  });
+  })
 
   test('calculates duration for mixed time and distance steps', () => {
     const workout = {
@@ -844,7 +857,7 @@ describe('makePayload Function', () => {
     // Expected: 600s warmup + ~510s run (2km @ ~4:15 min/km) + 300s cooldown = ~1410s
     expect(payload.estimatedDurationInSecs).toBeGreaterThan(1350)
     expect(payload.estimatedDurationInSecs).toBeLessThan(1470)
-  });
+  })
 
   test('calculates duration for distance steps with no pace target', () => {
     const workout = {
@@ -866,12 +879,12 @@ describe('makePayload Function', () => {
     }
 
     const payload = makePayload(workout)
-    
+
     // Expected: Using default running pace (0.36s/m) for 1609.344m = ~579.4s
     // We're just checking that a reasonable estimate is made using default pace
     expect(payload.estimatedDurationInSecs).toBeGreaterThan(550)
     expect(payload.estimatedDurationInSecs).toBeLessThan(610)
-  });
+  })
 
   test('calculates duration for repeat steps with distance-based children', () => {
     const workout = {
@@ -914,5 +927,5 @@ describe('makePayload Function', () => {
     // Total: 4 × (96s + 60s) = 4 × 156s = 624s
     expect(payload.estimatedDurationInSecs).toBeGreaterThan(600)
     expect(payload.estimatedDurationInSecs).toBeLessThan(650)
-  });
+  })
 })
