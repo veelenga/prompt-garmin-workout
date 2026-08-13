@@ -210,6 +210,10 @@ Constraints:
 - Use "no target" if no specific target is given.
 - For repeats, include "numberOfIterations" and "steps".
 - Use repeats where possible to avoid repeating steps. For example, use a repeat step for 5x1km intervals.
+- Repeats can be nested: a repeat's "steps" may contain another repeat step.
+- Mirror the description's structure exactly: every multiplier ("5x", "10 reps", "6 blocks", "3 sets", "4 rounds") becomes its own repeat level with that "numberOfIterations".
+- Recovery between blocks or sets goes inside the outer repeat as its last step.
+- The total number of work intervals must equal the product of all multipliers (e.g. 6 blocks of 10 reps = 60 work intervals).
 - Never mix intervals with recovery or rest steps in the same step. Use separate steps for each.
 - The step with the slowest target in the repeat should be of type "recovery" or "rest".
 - The JSON must be parsable and not include additional explanations. Do not include any formatting or comments in the JSON.
