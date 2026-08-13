@@ -102,7 +102,7 @@ export function makePayload(workout) {
     workoutSteps: [],
   }
 
-  const result = processSteps(workout.steps, stepOrder)
+  const result = processSteps(workout.steps, stepOrder, null, { lastId: 0 })
   segment.workoutSteps = result.steps
 
   payload.workoutSegments.push(segment)
@@ -135,11 +135,11 @@ function getSportType(sportTypeKey) {
  * @param {number} stepOrder - The current step order.
  * @returns {Object} - An object containing the array of formatted steps and updated stepOrder.
  */
-function processSteps(stepsArray, stepOrder) {
+function processSteps(stepsArray, stepOrder, childStepId, repeatGroupCounter) {
   const steps = []
 
   stepsArray.forEach((step) => {
-    const result = processStep(step, stepOrder)
+    const result = processStep(step, stepOrder, childStepId, repeatGroupCounter)
     steps.push(result.step)
     stepOrder = result.stepOrder
   })
@@ -153,18 +153,18 @@ function processSteps(stepsArray, stepOrder) {
  * @param {number} stepOrder - The current step order.
  * @returns {Object} - An object containing the formatted step and updated stepOrder.
  */
-function processStep(step, stepOrder) {
+function processStep(step, stepOrder, childStepId, repeatGroupCounter) {
   // Handle both stepType and endConditionType for identifying repeat steps
   if (
     step.numberOfIterations &&
     step.steps &&
     (step.stepType === 'repeat' || step.endConditionType === 'repeat')
   ) {
-    return processRepeatStep(step, stepOrder)
+    return processRepeatStep(step, stepOrder, repeatGroupCounter)
   } else if (!step.stepType) {
     throw new Error(`Missing stepType for step: ${step.stepName || 'Unnamed Step'}`)
   } else {
-    return processRegularStep(step, stepOrder)
+    return processRegularStep(step, stepOrder, childStepId)
   }
 }
 
@@ -174,13 +174,14 @@ function processStep(step, stepOrder) {
  * @param {number} stepOrder - The current step order.
  * @returns {Object} - An object containing the formatted executable step and updated stepOrder.
  */
-function processRegularStep(step, stepOrder) {
+function processRegularStep(step, stepOrder, childStepId) {
   const stepType = stepTypeMapping[step.stepType.toLowerCase()] || stepTypeMapping['interval']
 
   const workoutStep = {
     stepId: stepOrder,
     stepOrder: stepOrder,
     stepType: stepType,
+    childStepId: childStepId,
     type: 'ExecutableStepDTO',
     description: getStepDescription(step),
     stepAudioNote: null,
@@ -237,30 +238,30 @@ function processRegularStep(step, stepOrder) {
  * @param {number} stepOrder - The current step order.
  * @returns {Object} - An object containing the formatted repeat step and updated stepOrder.
  */
-function processRepeatStep(step, stepOrder) {
+function processRepeatStep(step, stepOrder, repeatGroupCounter) {
   if (typeof step.numberOfIterations !== 'number' || step.numberOfIterations <= 0) {
     throw new Error(`Invalid or missing numberOfIterations for repeat step.`)
   }
+
+  repeatGroupCounter.lastId += 1
+  const groupId = repeatGroupCounter.lastId
 
   const repeatStep = {
     stepId: stepOrder,
     stepOrder: stepOrder,
     stepType: stepTypeMapping['repeat'],
-    numberOfIterations: step.numberOfIterations || 1,
+    childStepId: groupId,
+    numberOfIterations: step.numberOfIterations,
     smartRepeat: false,
-    endCondition: {
-      conditionTypeId: 7,
-      conditionTypeKey: 'iterations',
-      displayOrder: 7,
-      displayable: false,
-    },
+    skipLastRestStep: false,
+    endCondition: endConditionTypeMapping.iterations,
+    endConditionValue: step.numberOfIterations,
     type: 'RepeatGroupDTO',
   }
 
   stepOrder += 1
 
-  // Recursively process child steps
-  const result = processSteps(step.steps, stepOrder)
+  const result = processSteps(step.steps, stepOrder, groupId, repeatGroupCounter)
   repeatStep.workoutSteps = result.steps
   stepOrder = result.stepOrder
 
@@ -467,7 +468,9 @@ export function createWorkout(workout, callback, errorCallback = () => {}) {
   }
 
   xhr.ontimeout = function () {
-    errorCallback(new Error(`Garmin upload timed out after ${GARMIN_UPLOAD_TIMEOUT_SECONDS} seconds.`))
+    errorCallback(
+      new Error(`Garmin upload timed out after ${GARMIN_UPLOAD_TIMEOUT_SECONDS} seconds.`),
+    )
   }
 
   const token = getGarminAccessToken()
