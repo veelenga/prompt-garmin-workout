@@ -584,13 +584,21 @@ describe('makePayload Function', () => {
           distanceUnit: 'm',
           stepType: 'recovery',
         },
+        {
+          stepName: 'Yard Cooldown',
+          stepDescription: 'Cool down for 500 yards',
+          endConditionType: 'distance',
+          stepDistance: 500,
+          distanceUnit: 'yd',
+          stepType: 'cooldown',
+        },
       ],
     }
 
     const payload = makePayload(workout)
 
     expect(payload.workoutName).toBe('Mixed Units Workout')
-    expect(payload.workoutSegments[0].workoutSteps.length).toBe(3)
+    expect(payload.workoutSegments[0].workoutSteps.length).toBe(4)
 
     // Check meters
     const warmupStep = payload.workoutSegments[0].workoutSteps[0]
@@ -603,6 +611,35 @@ describe('makePayload Function', () => {
     // Check recovery
     const recoveryStep = payload.workoutSegments[0].workoutSteps[2]
     expect(recoveryStep.endConditionValue).toBe(400) // 400 meters
+
+    // Check yards
+    const cooldownStep = payload.workoutSegments[0].workoutSteps[3]
+    expect(cooldownStep.endConditionValue).toBeCloseTo(457.2) // 500 yards in meters
+  })
+
+  test.each([
+    ['min_per_mile', 'pace', [7.5, 8], [1609.344 / (7.5 * 60), 1609.344 / (8 * 60)]],
+    ['mph', 'speed', [17, 19], [(17 * 1609.344) / 3600, (19 * 1609.344) / 3600]],
+    ['kmh', 'speed', [30, 35], [(30 * 1000) / 3600, (35 * 1000) / 3600]],
+  ])('converts %s %s targets to m/s', (unit, type, value, [expectedOne, expectedTwo]) => {
+    const workout = {
+      name: 'Unit Conversion',
+      type: 'running',
+      steps: [
+        {
+          stepName: 'Interval',
+          endConditionType: 'time',
+          stepDuration: 600,
+          stepType: 'interval',
+          target: { type, value, unit },
+        },
+      ],
+    }
+
+    const step = makePayload(workout).workoutSegments[0].workoutSteps[0]
+
+    expect(step.targetValueOne).toBeCloseTo(expectedOne)
+    expect(step.targetValueTwo).toBeCloseTo(expectedTwo)
   })
 
   test('creates payload for a repeating distance-based workout', () => {

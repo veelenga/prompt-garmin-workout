@@ -33,10 +33,27 @@ export const targetTypeMapping = {
   pace: { workoutTargetTypeId: 6, workoutTargetTypeKey: 'pace.zone', displayOrder: 6 },
 }
 
+const METERS_PER_KM = 1000
+const METERS_PER_MILE = 1609.344
+const METERS_PER_YARD = 0.9144
+const SECONDS_PER_MINUTE = 60
+const SECONDS_PER_HOUR = 3600
+
 export const distanceUnitMapping = {
-  m: { unitId: 2, unitKey: 'm', factor: 1 },
-  km: { unitId: 3, unitKey: 'km', factor: 1000 },
-  mile: { unitId: 4, unitKey: 'mile', factor: 1609.344 },
+  m: 1,
+  km: METERS_PER_KM,
+  mile: METERS_PER_MILE,
+  yd: METERS_PER_YARD,
+}
+
+const paceUnitMeters = {
+  min_per_km: METERS_PER_KM,
+  min_per_mile: METERS_PER_MILE,
+}
+
+const speedUnitMeters = {
+  kmh: METERS_PER_KM,
+  mph: METERS_PER_MILE,
 }
 
 export const endConditionTypeMapping = {
@@ -189,21 +206,18 @@ function processRegularStep(step, stepOrder, childStepId) {
 
   // Process end condition (time or distance)
   if (step.endConditionType === 'distance' && step.stepDistance && step.distanceUnit) {
-    const distanceUnit = distanceUnitMapping[step.distanceUnit.toLowerCase()]
-    if (!distanceUnit) {
+    const unitKey = step.distanceUnit.toLowerCase()
+    const metersPerUnit = distanceUnitMapping[unitKey]
+    if (!metersPerUnit) {
       throw new Error(`Unsupported distance unit: ${step.distanceUnit}`)
     }
 
     workoutStep.endCondition = endConditionTypeMapping.distance
-    workoutStep.endConditionValue = step.stepDistance * distanceUnit.factor // Convert to meters
+    workoutStep.endConditionValue = step.stepDistance * metersPerUnit
 
-    // When using km for distances >= 1000m, or miles for imperial, make sure
-    // the input value is preserved in the native unit rather than being converted
-    if (distanceUnit.unitKey === 'km' && workoutStep.endConditionValue >= 1000) {
+    // km conversion picks up float noise (1.1 * 1000 !== 1100); snap to whole meters
+    if (unitKey === 'km') {
       workoutStep.endConditionValue = Math.round(workoutStep.endConditionValue)
-    } else if (distanceUnit.unitKey === 'mile') {
-      // For miles, preserve the exact conversion factor
-      workoutStep.endConditionValue = step.stepDistance * 1609.344
     }
   } else {
     // Default to time-based
@@ -322,11 +336,11 @@ function calculateValueRange(value, targetTypeKey) {
 
 /**
  * Calculates the pace range based on the target pace.
- * @param {number} pace - The target pace in min/km.
+ * @param {number} pace - The target pace in minutes per distance unit.
  * @returns {Array} - An array containing the min and max pace values.
  */
 function calculatePaceRange(pace) {
-  const tenSecondsInMinutes = 10 / 60
+  const tenSecondsInMinutes = 10 / SECONDS_PER_MINUTE
 
   const minPace = pace - tenSecondsInMinutes
   const maxPace = pace + tenSecondsInMinutes
@@ -341,12 +355,13 @@ function calculatePaceRange(pace) {
  * @returns {number} - The converted value.
  */
 function convertValueToUnit(value, unit) {
-  switch (unit) {
-    case 'min_per_km':
-      return 1000 / (value * 60)
-    default:
-      return value
+  if (unit in paceUnitMeters) {
+    return paceUnitMeters[unit] / (value * SECONDS_PER_MINUTE)
   }
+  if (unit in speedUnitMeters) {
+    return (value * speedUnitMeters[unit]) / SECONDS_PER_HOUR
+  }
+  return value
 }
 
 /**
@@ -411,33 +426,20 @@ function calculateStepsDuration(steps, sportType) {
  */
 function estimateStepDuration(step, sportType) {
   const distance = step.endConditionValue // distance in meters
+  const targetTypeKey = step.targetType?.workoutTargetTypeKey
   let pacePerMeter
 
-  // Check if the step has a pace target
   if (
-    step.targetType &&
-    step.targetType.workoutTargetTypeKey === 'pace.zone' &&
+    ['pace.zone', 'speed.zone'].includes(targetTypeKey) &&
     step.targetValueOne &&
     step.targetValueTwo
   ) {
-    // Use the average of min and max pace values
-    // targetValueOne and targetValueTwo are in m/s, so we convert to seconds per meter
+    // targetValueOne/Two are already converted to m/s for both pace and speed targets
     pacePerMeter = 2 / (step.targetValueOne + step.targetValueTwo)
-  } else if (
-    step.targetType &&
-    step.targetType.workoutTargetTypeKey === 'speed.zone' &&
-    step.targetValueOne &&
-    step.targetValueTwo
-  ) {
-    // If speed target, use the average speed in m/s
-    const avgSpeed = (step.targetValueOne + step.targetValueTwo) / 2
-    pacePerMeter = 1 / avgSpeed
   } else {
-    // Use default pace value based on sport type
     pacePerMeter = DEFAULT_PACE[sportType.toLowerCase()] || DEFAULT_PACE.running
   }
 
-  // Calculate estimated duration
   return distance * pacePerMeter
 }
 

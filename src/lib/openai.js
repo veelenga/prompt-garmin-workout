@@ -187,12 +187,12 @@ Requirements:
       "endConditionType": "time" | "distance", // Either time or distance based
       "stepDuration": duration_in_seconds, // Only used when endConditionType is "time"
       "stepDistance": distance_value, // Only used when endConditionType is "distance"
-      "distanceUnit": "m" | "km" | "mile", // Only used when endConditionType is "distance"
+      "distanceUnit": "m" | "km" | "mile" | "yd", // Only used when endConditionType is "distance"
       "stepType": "warmup" | "cooldown" | "interval" | "recovery" | "rest" | "repeat",
       "target": {
         "type": "no target" | "pace" | "heart rate" | "power" | "cadence" | "speed",
         "value": [minValue, maxValue] or single_value,
-        "unit": "min_per_km" | "bpm" | "watts" | etc.
+        "unit": "min_per_km" | "min_per_mile" | "kmh" | "mph" | "bpm" | "watts" | "rpm"
       },
       "numberOfIterations": number, // Only for repeat steps
       "steps": [ ... ] // Nested steps for repeats
@@ -205,8 +205,8 @@ Constraints:
 - The "type" should be one of the supported sports.
 - When using time-based steps, "stepDuration" should be in seconds.
 - When using distance-based steps, include "stepDistance" and "distanceUnit" instead of "stepDuration".
-- For distance-based steps, use "m" for meters, "km" for kilometers, and "mile" for miles.
-- For pace targets, convert times like "4:30 per km" to minutes per km as a decimal (e.g., 4.5).
+- Keep the units from the description; never convert between metric and imperial.
+- For pace targets, use decimal minutes in the description's unit: "4:30 per km" becomes 4.5 with unit "min_per_km", "7:30 per mile" becomes 7.5 with unit "min_per_mile".
 - Use "no target" if no specific target is given.
 - For repeats, include "numberOfIterations" and "steps".
 - Use repeats where possible to avoid repeating steps. For example, use a repeat step for 5x1km intervals.
